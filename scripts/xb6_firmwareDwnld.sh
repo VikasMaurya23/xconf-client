@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ##########################################################################
-#  not stated otherwise in this file or this component's Licenses.txt
+# If not stated otherwise in this file or this component's Licenses.txt
 # file the following copyright and licenses apply:
 #
 # Copyright 2017 RDK Management
@@ -349,8 +349,9 @@ do_Codebig_signing()
             domain_name=`echo $xconf_url | cut -d / -f3`
             getRequestType $domain_name
             request_type=$?
-            SIGN_CMD="GetServiceUrl $request_type \"$JSONSTR\""
-            eval $SIGN_CMD > $SIGN_FILE
+            #SIGN_CMD="GetServiceUrl $request_type \"$JSONSTR\""
+            #eval $SIGN_CMD > $SIGN_FILE
+            GetServiceUrl "$request_type" "$JSONSTR" > "$SIGN_FILE"
             CB_SIGNED_REQUEST=`cat $SIGN_FILE`
             rm -f $SIGN_FILE
       else
@@ -359,10 +360,14 @@ do_Codebig_signing()
             if [ "$domainName" == "$DAC15_DOMAIN" ]; then
                 request_type=14
             fi      
-            SIGN_CMD="GetServiceUrl $request_type \"$imageHTTPURL\""
-            echo $SIGN_CMD >>$XCONF_LOG_FILE
+            #SIGN_CMD="GetServiceUrl $request_type \"$imageHTTPURL\""
+            #echo $SIGN_CMD >>$XCONF_LOG_FILE
             echo -e "\n"
-            eval $SIGN_CMD > $SIGN_FILE
+            #eval $SIGN_CMD > $SIGN_FILE
+            echo "GetServiceUrl $request_type" >> "$XCONF_LOG_FILE"
+            GetServiceUrl "$request_type" "$imageHTTPURL" > "$SIGN_FILE"
+            accountId=$(getAccountId | tr -cd 'A-Za-z0-9._-')
+            partnerId=$(getPartnerId | tr -cd 'A-Za-z0-9._-')
             cbSignedimageHTTPURL=`cat $SIGN_FILE`
             rm -f $SIGN_FILE
 #            echo $cbSignedimageHTTPURL >>$XCONF_LOG_FILE
