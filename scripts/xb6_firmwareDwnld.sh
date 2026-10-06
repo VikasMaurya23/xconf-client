@@ -362,6 +362,17 @@ do_Codebig_signing()
             fi      
             #SIGN_CMD="GetServiceUrl $request_type \"$imageHTTPURL\""
             #echo $SIGN_CMD >>$XCONF_LOG_FILE
+
+            if ! echo "$firmwareLocation" | grep -Eq '^https://[A-Za-z0-9./_-]+$'; then
+                echo "Invalid firmwareLocation: $firmwareLocation" >> "$XCONF_LOG_FILE"
+                return 1
+            fi
+
+            if ! echo "$firmwareFilename" | grep -Eq '^[A-Za-z0-9._-]+$'; then
+                echo "Invalid firmwareFilename: $firmwareFilename" >> "$XCONF_LOG_FILE"
+                return 1
+            fi
+
             echo -e "\n"
             #eval $SIGN_CMD > $SIGN_FILE
             echo "GetServiceUrl $request_type" >> "$XCONF_LOG_FILE"
