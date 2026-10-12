@@ -349,8 +349,6 @@ do_Codebig_signing()
             domain_name=`echo $xconf_url | cut -d / -f3`
             getRequestType $domain_name
             request_type=$?
-            #SIGN_CMD="GetServiceUrl $request_type \"$JSONSTR\""
-            #eval $SIGN_CMD > $SIGN_FILE
             GetServiceUrl "$request_type" "$JSONSTR" > "$SIGN_FILE"
             CB_SIGNED_REQUEST=`cat $SIGN_FILE`
             rm -f $SIGN_FILE
@@ -360,9 +358,7 @@ do_Codebig_signing()
             if [ "$domainName" == "$DAC15_DOMAIN" ]; then
                 request_type=14
             fi      
-            #SIGN_CMD="GetServiceUrl $request_type \"$imageHTTPURL\""
-            #echo $SIGN_CMD >>$XCONF_LOG_FILE
-
+            
             if ! echo "$firmwareLocation" | grep -Eq '^https://[A-Za-z0-9./_-]+$'; then
                 echo "Invalid firmwareLocation: $firmwareLocation" >> "$XCONF_LOG_FILE"
                 return 1
@@ -374,7 +370,6 @@ do_Codebig_signing()
             fi
 
             echo -e "\n"
-            #eval $SIGN_CMD > $SIGN_FILE
             echo "GetServiceUrl $request_type" >> "$XCONF_LOG_FILE"
             GetServiceUrl "$request_type" "$imageHTTPURL" > "$SIGN_FILE"
             accountId=$(getAccountId | tr -cd 'A-Za-z0-9._-')
@@ -384,6 +379,10 @@ do_Codebig_signing()
 #            echo $cbSignedimageHTTPURL >>$XCONF_LOG_FILE
             cbSignedimageHTTPURL=`echo $cbSignedimageHTTPURL | sed 's|stb_cdl%2F|stb_cdl/|g'`
             serverUrl=`echo $cbSignedimageHTTPURL | sed -e "s|[?&]oauth_consumer_key.*||g"`
+	    if ! echo "$serverUrl" | grep -Eq '^https://[A-Za-z0-9:/._-]+$'; then
+                echo "Invalid serverUrl: $serverUrl" >> "$XCONF_LOG_FILE"
+                return 1
+            fi
             authorizationHeader=`echo $cbSignedimageHTTPURL | sed -e "s|&|\", |g" -e "s|=|=\"|g" -e "s|.*oauth_consumer_key|oauth_consumer_key|g"`
             authorizationHeader="Authorization: OAuth realm=\"\", $authorizationHeader\""
             CURL_SSR_PARAM="-H '$authorizationHeader' '$serverUrl'"
