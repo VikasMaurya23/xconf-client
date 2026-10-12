@@ -1503,6 +1503,20 @@ do
         echo "$firmwareLocation" > /tmp/xconfdownloadurl
         #/etc/whitelist.sh "$firmwareLocation"
 
+        # Strict validation of firmwareLocation
+        if ! echo "$firmwareLocation" | grep -Eq '^https://[A-Za-z0-9:/._-]+$'; then
+            echo_t "XCONF SCRIPT : Invalid firmwareLocation: $firmwareLocation" >> "$XCONF_LOG_FILE"
+            rm -f $DOWNLOAD_INPROGRESS
+            exit 1
+        fi
+
+        # Strict validation of firmwareFilename
+        if ! echo "$firmwareFilename" | grep -Eq '^[A-Za-z0-9._-]+$'; then
+            echo_t "XCONF SCRIPT : Invalid firmwareFilename: $firmwareFilename" >> "$XCONF_LOG_FILE"
+            rm -f $DOWNLOAD_INPROGRESS
+            exit 1
+        fi
+
         if [ "$direct_CDN" = "true" ];then
             echo_t "XCONF SCRIPT : HTTP CDN_Direct set for $curr_conn_type download"
             echo_t "XCONF SCRIPT : HTTP CDN_Direct set for $curr_conn_type download" >> $XCONF_LOG_FILE
@@ -1532,7 +1546,7 @@ do
                   echo_t "XCONF SCRIPT stateRedRecovery : $cert" >> $XCONF_LOG_FILE
                   echo_t "XCONF SCRIPT stateRedRecovery : $firmwareLocation/$firmwareFilename" >> $XCONF_LOG_FILE
                   echo_t "XCONF SCRIPT stateRedRecovery : $firmwareFilename " >> $XCONF_LOG_FILE
-                  XconfHttpDl set_http_url " $cert $firmwareLocation/$firmwareFilename " "$firmwareFilename" complete_url
+                  XconfHttpDl set_http_url " $cert " " $firmwareLocation/$firmwareFilename " "$firmwareFilename" complete_url
                   set_url_stat=$?
               fi
           elif [ "$direct_CDN" = "true" ] && [ $CDL_SERVER_OVERRIDE != 1 ];then
@@ -1550,7 +1564,7 @@ do
               if [ "$BOX_TYPE" = "SR300" ] || [ "$BOX_TYPE" = "SR213" ] || [ "$BOX_TYPE" = "SCER11BEL" ] || [ "x$BOX_TYPE" = "xSCXF11BFL" ] || [ "x$BOX_TYPE" = "xXER2" ]; then
                   XconfHttpDl set_http_url "$firmwareLocation" "$firmwareFilename" "$CERT"
               else
-                  XconfHttpDl set_http_url " $CERT $firmwareLocation/$firmwareFilename " "$firmwareFilename" complete_url
+                  XconfHttpDl set_http_url " $CERT " " $firmwareLocation/$firmwareFilename " "$firmwareFilename" complete_url
               fi
               set_url_stat=$?
               echo_t "XCONF SCRIPT : URL with certificate --- --tlsv1.2 -fgL $firmwareLocation and NAME --- $firmwareFilename"
