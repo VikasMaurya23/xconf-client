@@ -289,7 +289,14 @@ do_Codebig_signing()
             rm -f $SIGN_FILE
       else
             request_type=1
-            domainName=`echo $imageHTTPURL | awk -F/ '{print $3}'`
+            imageHTTPURL="$(echo "$imageHTTPURL" | tr -d '\n\r')"
+            case "$imageHTTPURL" in
+                ''|*[!A-Za-z0-9:/?&=._%+-]*)
+                    echo_t "Invalid imageHTTPURL" >> "$XCONF_LOG_FILE"
+                    return 1
+                    ;;
+            esac
+	    domainName=`echo $imageHTTPURL | awk -F/ '{print $3}'`
             if [ "$domainName" == "$DAC15_DOMAIN" ]; then
                 request_type=14
             fi
