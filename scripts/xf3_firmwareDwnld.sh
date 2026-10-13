@@ -284,8 +284,7 @@ do_Codebig_signing()
             domain_name=`echo $xconf_url | cut -d / -f3`
             getRequestType $domain_name
             request_type=$?
-            SIGN_CMD="configparamgen $request_type \"$JSONSTR\""
-            eval $SIGN_CMD > $SIGN_FILE
+            configparamgen "$request_type" "$JSONSTR" > $SIGN_FILE
             CB_SIGNED_REQUEST=`cat $SIGN_FILE`
             rm -f $SIGN_FILE
       else
@@ -294,10 +293,9 @@ do_Codebig_signing()
             if [ "$domainName" == "$DAC15_DOMAIN" ]; then
                 request_type=14
             fi
-            SIGN_CMD="configparamgen $request_type \"$imageHTTPURL\""
-            echo $SIGN_CMD >>$XCONF_LOG_FILE
+            configparamgen "$request_type" "$imageHTTPURL" >> $XCONF_LOG_FILE
             echo -e "\n"
-            eval $SIGN_CMD > $SIGN_FILE
+            configparamgen "$request_type" "$imageHTTPURL" > $SIGN_FILE
             cbSignedimageHTTPURL=`cat $SIGN_FILE`
             rm -f $SIGN_FILE
 #            echo $cbSignedimageHTTPURL >>$XCONF_LOG_FILE
@@ -305,7 +303,35 @@ do_Codebig_signing()
             serverUrl=`echo $cbSignedimageHTTPURL | sed -e "s|[?&]oauth_consumer_key.*||g"`
             authorizationHeader=`echo $cbSignedimageHTTPURL | sed -e "s|&|\", |g" -e "s|=|=\"|g" -e "s|.*oauth_consumer_key|oauth_consumer_key|g"`
             authorizationHeader="Authorization: OAuth realm=\"\", $authorizationHeader\""
-            CURL_CMD_SSR="curl $CERT_STATUS --connect-timeout 30 --tlsv1.2 --interface $interface -H '$authorizationHeader' $addr_type -w '%{http_code}\n' -fgLo $TMP_PATH/$firmwareFilename '$serverUrl'"
+            HTTP_CODE=$(
+                "$CURL_PATH/curl" \
+                --interface "$interface" \
+                $addr_type \
+                -w '%{http_code}\n' \
+                --tlsv1.2 \
+                --data-urlencode "$JSONSTR" \
+                -o "$FWDL_JSON" \
+                -- "$xconf_url" \
+                $CERT_STATUS \
+                --connect-timeout 30 \
+                -m 30
+            )
+            ret=$?
+
+            case "$partnerId" in
+                ''|*[!A-Za-z0-9._-]*)
+                echo_t "Invalid partnerId"
+                return 1
+                ;;
+            esac
+
+            case "$accountId" in
+                ''|*[!A-Za-z0-9._-]*)
+                echo_t "Invalid accountId"
+                return 1
+                ;;
+            esac
+
       fi
 }
 
