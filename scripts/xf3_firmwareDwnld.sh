@@ -1452,22 +1452,41 @@ do
         then
             touch $DOWNLOAD_INPROGRESS
         fi
+        if ! echo "$firmwareLocation" | grep -Eq '^https://[A-Za-z0-9./_-]+$'; then
+            echo "Invalid firmwareLocation: $firmwareLocation" >> "$XCONF_LOG_FILE"
+            return 1
+        fi
+
+        if ! echo "$firmwareFilename" | grep -Eq '^[A-Za-z0-9._-]+$'; then
+            echo "Invalid firmwareFilename: $firmwareFilename" >> "$XCONF_LOG_FILE"
+            return 1
+        fi
        echo "$firmwareLocation" > /tmp/xconfdownloadurl
 
        if [ "$curr_conn_type" = "direct" ]; then
           # Set the url and filename
           echo_t "XCONF SCRIPT : URL --- $firmwareLocation and NAME --- $firmwareFilename"
           echo_t "XCONF SCRIPT : URL --- $firmwareLocation and NAME --- $firmwareFilename" >> $XCONF_LOG_FILE
-          CURL_CMD_SSR="curl $CERT_STATUS --connect-timeout 30 --tlsv1.2 --interface $interface $addr_type -w '%{http_code}\n' -fgLo $TMP_PATH/$firmwareFilename '$firmwareLocation/$firmwareFilename'"
-          echo_t "Direct CURL_CMD : $CURL_CMD_SSR"
-          echo_t "Direct CURL_CMD : $CURL_CMD_SSR" >> $XCONF_LOG_FILE
+          curl \
+              $CERT_STATUS \
+              --connect-timeout 30 \
+              --tlsv1.2 \
+              --interface "$interface" \
+              $addr_type \
+              -w '%{http_code}\n' \
+              -fgLo "$TMP_PATH/$firmwareFilename" \
+              -- \
+              "$firmwareLocation/$firmwareFilename"
+
+          echo_t "Direct firmware download initiated"
+          echo_t "Direct firmware download initiated" >> "$XCONF_LOG_FILE"
 #          $BIN_PATH/XconfHttpDl set_http_url "$firmwareLocation" "$firmwareFilename"
        else
           # Set the url and filename
           echo_t "XCONF SCRIPT : URL --- `echo $serverUrl |  sed -e  's/oauth_consumer_key=.*oauth_signature=.*/<hidden>/g'` and NAME --- $firmwareFilename"
           echo_t "XCONF SCRIPT : URL --- `echo $serverUrl | sed -e  's/oauth_consumer_key=.*oauth_signature=.*/<hidden>/g'` and NAME --- $firmwareFilename" >> $XCONF_LOG_FILE
-          echo_t "Codebig CURL_CMD :`echo  "$CURL_CMD_SSR" |  sed -e  's/oauth_consumer_key=.*oauth_signature=.*/<hidden>/g'`"
-          echo_t "Codebig CURL_CMD :`echo  "$CURL_CMD_SSR" |  sed -e  's/oauth_consumer_key=.*oauth_signature=.*/<hidden>/g'`" >> $XCONF_LOG_FILE
+          echo_t "Codebig firmware download initiated"
+          echo_t "Codebig firmware download initiated" >> "$XCONF_LOG_FILE"
 #          $BIN_PATH/XconfHttpDl set_http_url "$serverUrl" "$firmwareFilename"
        fi
 
@@ -1520,10 +1539,21 @@ do
            numberOfTries=5
            while [ $currentTry -lt $numberOfTries ]; 
            do
-		HTTP_CODE=`result= eval $CURL_CMD_SSR`
+		HTTP_CODE=$(
+                curl \
+                    $CERT_STATUS \
+                    --connect-timeout 30 \
+                    --tlsv1.2 \
+                    --interface "$interface" \
+                    $addr_type \
+                    -w '%{http_code}' \
+                    -fgLo "$TMP_PATH/$firmwareFilename" \
+                    -- \
+                    "$firmwareLocation/$firmwareFilename"
+                )
 		curl_code=$?
 		HTTP_RESPONSE_CODE=$(echo "$HTTP_CODE" | awk -F\" '{print $1}' )
-		echo_t "XCONF SCRIPT : Direct CURL_CMD_SSR : $CURL_CMD_SSR" >> $XCONF_LOG_FILE  
+		echo_t "XCONF SCRIPT : Download URL : $firmwareLocation/$firmwareFilename" >> $XCONF_LOG_FILE  
 		echo_t "XCONF SCRIPT : curl_code:$curl_code, http_code:$HTTP_RESPONSE_CODE"  >> $XCONF_LOG_FILE
 		[ "x$HTTP_RESPONSE_CODE" != "x" ] || HTTP_RESPONSE_CODE=0    
 		if [ "x$curl_code" ==  "x0" ] && [ "x$HTTP_RESPONSE_CODE" == "x200" ] ; then
