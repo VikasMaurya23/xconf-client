@@ -1461,6 +1461,14 @@ do
             echo "Invalid firmwareFilename: $firmwareFilename" >> "$XCONF_LOG_FILE"
             return 1
         fi
+
+	case "$firmwareFilename" in
+            -*)
+            echo_t "Invalid firmware filename"
+            exit 1
+            ;;
+        esac
+
        echo "$firmwareLocation" > /tmp/xconfdownloadurl
 
        if [ "$curr_conn_type" = "direct" ]; then
