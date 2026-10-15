@@ -1531,6 +1531,20 @@ do
 
         if [ "$curr_conn_type" = "direct" ]; then
           # Set the url and filename
+	  
+          # Validate firmware URL
+          if ! echo "$firmware_URL" | grep -Eq '^https://[A-Za-z0-9./_-]+$'; then
+              echo_t "XCONF SCRIPT : Invalid firmware_URL: $firmware_URL" >> "$XCONF_LOG_FILE"
+              set_url_stat=1
+              return 1
+          fi
+
+          # Validate filename
+          if ! echo "$firmwareFilename" | grep -Eq '^[A-Za-z0-9._-]+$'; then
+              echo_t "XCONF SCRIPT : Invalid firmwareFilename: $firmwareFilename" >> "$XCONF_LOG_FILE"
+              set_url_stat=1
+              return 1
+          fi
           if [ "$triggeredFrom" = "stateRedRecovery" ];then
               stateRedlog "XCONF SCRIPT : stateRedRecovery - setting mtls state red credentials"
               cert="$(getStateRedCreds)"
@@ -1550,20 +1564,6 @@ do
                   set_url_stat=$?
               fi
           elif [ "$direct_CDN" = "true" ] && [ $CDL_SERVER_OVERRIDE != 1 ];then
-              # Validate firmware URL
-              if ! echo "$firmware_URL" | grep -Eq '^https://[A-Za-z0-9./_-]+$'; then
-                  echo_t "XCONF SCRIPT : Invalid firmware_URL: $firmware_URL" >> "$XCONF_LOG_FILE"
-                  set_url_stat=1
-                  return 1
-              fi
-
-	      # Validate filename
-              if ! echo "$firmwareFilename" | grep -Eq '^[A-Za-z0-9._-]+$'; then
-                  echo_t "XCONF SCRIPT : Invalid firmwareFilename: $firmwareFilename" >> "$XCONF_LOG_FILE"
-                  set_url_stat=1
-                  return 1
-              fi
-		  
               echo_t "XCONF SCRIPT : URL --- --tlsv1.2 -fgL $firmware_URL and NAME --- $firmwareFilename"
               echo_t "XCONF SCRIPT : URL --- --tlsv1.2 -fgL $firmware_URL and NAME --- $firmwareFilename" >> $XCONF_LOG_FILE
 
@@ -1574,21 +1574,6 @@ do
               if [ "$BOX_TYPE" = "XB6" -a "$MANUFACTURE" = "Arris" ]; then
                   CERT=$(echo "$CERT" | sed 's/--config \/dev\/stdin//g')
               fi
-              
-              # Validate firmwareLocation
-              if ! echo "$firmwareLocation" | grep -Eq '^https://[A-Za-z0-9./_-]+$'; then
-                  echo_t "XCONF SCRIPT : Invalid firmwareLocation: $firmwareLocation" >> "$XCONF_LOG_FILE"
-                  set_url_stat=1
-                  return 1
-              fi
-
-              # Validate filename
-              if ! echo "$firmwareFilename" | grep -Eq '^[A-Za-z0-9._-]+$'; then
-                  echo_t "XCONF SCRIPT : Invalid firmwareFilename: $firmwareFilename" >> "$XCONF_LOG_FILE"
-                  set_url_stat=1
-                  return 1
-              fi
-
               #Use the MTLS certificates for all platforms"
               if [ "$BOX_TYPE" = "SR300" ] || [ "$BOX_TYPE" = "SR213" ] || [ "$BOX_TYPE" = "SCER11BEL" ] || [ "x$BOX_TYPE" = "xSCXF11BFL" ] || [ "x$BOX_TYPE" = "xXER2" ]; then
                   XconfHttpDl set_http_url "$firmwareLocation" "$firmwareFilename" "$CERT"
