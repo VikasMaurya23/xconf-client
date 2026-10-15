@@ -310,20 +310,28 @@ do_Codebig_signing()
             serverUrl=`echo $cbSignedimageHTTPURL | sed -e "s|[?&]oauth_consumer_key.*||g"`
             authorizationHeader=`echo $cbSignedimageHTTPURL | sed -e "s|&|\", |g" -e "s|=|=\"|g" -e "s|.*oauth_consumer_key|oauth_consumer_key|g"`
             authorizationHeader="Authorization: OAuth realm=\"\", $authorizationHeader\""
-            HTTP_CODE=$(
-                "$CURL_PATH/curl" \
-                --interface "$interface" \
-                $addr_type \
-                -w '%{http_code}\n' \
-                --tlsv1.2 \
-                --data-urlencode "$JSONSTR" \
-                -o "$FWDL_JSON" \
-                -- "$xconf_url" \
-                $CERT_STATUS \
-                --connect-timeout 30 \
-                -m 30
+	    if [[! "$firmwareFilename" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$]] ||
+		    [["$firmwareFilename" == "." || "$firmwareFilename" == ".."]]; then
+	            echo_t "XCONF SCRIPT: Invalid firmware filename" >> "XCONF_LOG_FILE"
+		    return 1
+	    fi
+	    CURL_ARGS=(
+                "${CERT_STATUS[@]}"
+		--connect-timeout 30
+		--tlsv1.2
+		--interface "$interface"
+		--header "@$auth_tmp"
+		"${addr_type[@]}"
+		--write-out $'%{http_code}\n'
+		--fail
+		--location
+		--output "${TMP_PATH%/}/$firmwareFilename"
+		"$serverUrl"
             )
-            ret=$?
+            curl "${CURL_ARGS[@]}"
+	    curl_status=$?
+
+	    rm -f -- "$auth_tmp"
 
             case "$partnerId" in
                 ''|*[!A-Za-z0-9._-]*)
@@ -1461,12 +1469,11 @@ do
             echo "Invalid firmwareFilename: $firmwareFilename" >> "$XCONF_LOG_FILE"
             return 1
         fi
-
-	case "$firmwareFilename" in
-            -*)
-            echo_t "Invalid firmware filename"
-            exit 1
-            ;;
+        case "$firmwareFilename" in
+             -*)
+             echo_t "Invalid firmware filename"
+             exit 1
+             ;;
         esac
 
        echo "$firmwareLocation" > /tmp/xconfdownloadurl
@@ -1547,7 +1554,7 @@ do
            numberOfTries=5
            while [ $currentTry -lt $numberOfTries ]; 
            do
-		HTTP_CODE=$(
+               HTTP_CODE=$(
                 curl \
                     $CERT_STATUS \
                     --connect-timeout 30 \
@@ -1561,7 +1568,7 @@ do
                 )
 		curl_code=$?
 		HTTP_RESPONSE_CODE=$(echo "$HTTP_CODE" | awk -F\" '{print $1}' )
-		echo_t "XCONF SCRIPT : Download URL : $firmwareLocation/$firmwareFilename" >> $XCONF_LOG_FILE  
+                echo_t "XCONF SCRIPT : Download URL : $firmwareLocation/$firmwareFilename" >> $XCONF_LOG_FILE  
 		echo_t "XCONF SCRIPT : curl_code:$curl_code, http_code:$HTTP_RESPONSE_CODE"  >> $XCONF_LOG_FILE
 		[ "x$HTTP_RESPONSE_CODE" != "x" ] || HTTP_RESPONSE_CODE=0    
 		if [ "x$curl_code" ==  "x0" ] && [ "x$HTTP_RESPONSE_CODE" == "x200" ] ; then
